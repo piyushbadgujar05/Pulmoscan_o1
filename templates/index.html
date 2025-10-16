@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PulmoScan AI | Advanced Lung Cancer Detection</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .medical-gradient {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+        
+        .shadow-glow {
+            box-shadow: 0 0 50px rgba(102, 126, 234, 0.15);
+        }
+        
+        .pulse-dot {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.05); }
+        }
+        
+        .slide-in {
+            animation: slideIn 0.8s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(40px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .fade-in {
+            animation: fadeIn 1s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .progress-bar {
+            transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .floating {
+            animation: floating 6s ease-in-out infinite;
+        }
+        
+        @keyframes floating {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(5deg); }
+        }
+        
+        .risk-low { 
+            background: linear-gradient(135deg, #10b981, #34d399);
+            box-shadow: 0 20px 40px rgba(16, 185, 129, 0.3);
+        }
+        
+        .risk-medium { 
+            background: linear-gradient(135deg, #f59e0b, #fbbf24);
+            box-shadow: 0 20px 40px rgba(245, 158, 11, 0.3);
+        }
+        
+        .risk-high { 
+            background: linear-gradient(135deg, #ef4444, #f87171);
+            box-shadow: 0 20px 40px rgba(239, 68, 68, 0.3);
+        }
+        
+        .typewriter {
+            overflow: hidden;
+            border-right: 3px solid #667eea;
+            white-space: nowrap;
+            animation: typing 3.5s steps(40, end), blink-caret 0.75s step-end infinite;
+        }
+        
+        @keyframes typing {
+            from { width: 0 }
+            to { width: 100% }
+        }
+        
+        @keyframes blink-caret {
+            from, to { border-color: transparent }
+            50% { border-color: #667eea }
+        }
+        
+        .image-preview {
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .image-preview:hover {
+            transform: scale(1.02);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+        }
+        
+        .grid-lines {
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+        }
+        
+        .scan-animation {
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            animation: scan 2s linear infinite;
+        }
+        
+        @keyframes scan {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .modal-overlay {
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 min-h-screen overflow-x-hidden">
+    <!-- Animated Background -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute -top-40 -right-32 w-96 h-96 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 floating"></div>
+        <div class="absolute -bottom-40 -left-32 w-96 h-96 bg-cyan-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 floating" style="animation-delay: 2s;"></div>
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 floating" style="animation-delay: 4s;"></div>
+    </div>
+
+    <!-- Header -->
+    <header class="relative z-10">
+        <nav class="glass-effect shadow-glow mx-4 lg:mx-8 mt-4 rounded-3xl border border-white/30">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center space-x-4">
+                        <div class="medical-gradient p-3 rounded-2xl shadow-lg transform hover:scale-110 transition-transform duration-300">
+                            <i class="fas fa-lungs text-white text-2xl"></i>
+                        </div>
+                        <div>
+                            <h1 class="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                                PulmoScan AI
+                            </h1>
+                            <p class="text-sm text-gray-600 font-medium hidden sm:block">Intelligent Lung Cancer Detection</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center space-x-4">
+                        <div id="status" class="flex items-center space-x-3 bg-white/80 px-4 py-2 rounded-full shadow-sm border border-gray-100">
+                            <div class="w-2.5 h-2.5 bg-green-500 rounded-full pulse-dot"></div>
+                            <span class="text-sm font-medium text-gray-700 hidden sm:block">System Online</span>
+                        </div>
+                        <button class="bg-white/80 hover:bg-white transition-all duration-300 px-4 py-2 rounded-full shadow-sm text-sm font-medium text-gray-700 flex items-center space-x-2 border border-gray-100">
+                            <i class="fas fa-info-circle text-blue-600"></i>
+                            <span class="hidden sm:block">About</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Hero Section -->
+        <div class="text-center mb-16 slide-in">
+            <div class="inline-flex items-center medical-gradient text-white px-6 py-3 rounded-full text-sm font-semibold mb-6 shadow-lg space-x-2">
+                <i class="fas fa-shield-alt"></i>
+                <span>Trusted by Medical Professionals Worldwide</span>
+            </div>
+            <h1 class="text-4xl sm:text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
+                Early Detection
+                <span class="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent block mt-2">
+                    Saves Lives
+                </span>
+            </h1>
+            <p class="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+                Advanced AI technology that analyzes CT scans with 95% accuracy to detect lung cancer at its earliest stages
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-16">
+            <!-- Upload & Preview Section -->
+            <div class="space-y-8">
+                <!-- Upload Card -->
+                <div class="glass-effect rounded-3xl p-6 sm:p-8 shadow-glow slide-in">
+                    <div class="flex items-center space-x-3 mb-8">
+                        <div class="medical-gradient p-3 rounded-xl shadow-lg">
+                            <i class="fas fa-cloud-upload-alt text-white text-xl"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-900">Upload CT Scan</h2>
+                            <p class="text-gray-600">Get instant AI analysis</p>
+                        </div>
+                    </div>
+
+                    <!-- Upload Area -->
+                    <div id="upload-area" 
+                         class="border-3 border-dashed border-blue-200/50 rounded-2xl p-8 text-center cursor-pointer transition-all duration-500 hover:border-blue-400 hover:bg-blue-50/50 hover:scale-[1.02] mb-6 bg-gradient-to-br from-blue-50 to-white relative overflow-hidden">
+                        <div class="scan-animation absolute inset-0 pointer-events-none"></div>
+                        <input type="file" id="file-input" class="hidden" accept=".png,.jpg,.jpeg,.bmp,.tiff">
+                        <div class="space-y-6 relative z-10">
+                            <div class="inline-flex items-center justify-center w-20 h-20 medical-gradient rounded-2xl shadow-lg">
+                                <i class="fas fa-file-medical-alt text-white text-2xl"></i>
+                            </div>
+                            <div>
+                                <p class="text-xl font-semibold text-gray-800 mb-2">Upload CT Scan Image</p>
+                                <p class="text-gray-500">Drag & drop or click to browse</p>
+                                <p class="text-sm text-gray-400 mt-2">Supports: PNG, JPG, JPEG, BMP, TIFF</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Selected File -->
+                    <div id="file-info" class="hidden mb-6">
+                        <div class="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 transform transition-all duration-300 hover:scale-[1.02]">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-4">
+                                    <div class="bg-green-100 p-3 rounded-xl">
+                                        <i class="fas fa-check text-green-600 text-lg"></i>
+                                    </div>
+                                    <div>
+                                        <p id="file-name" class="font-semibold text-gray-900 text-lg"></p>
+                                        <p id="file-size" class="text-gray-500 text-sm"></p>
+                                    </div>
+                                </div>
+                                <button id="remove-file" class="text-red-500 hover:text-red-700 transition-colors p-2 rounded-lg hover:bg-red-50">
+                                    <i class="fas fa-times text-xl"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Analyze Button -->
+                    <button id="analyze-btn" 
+                            class="w-full medical-gradient hover:shadow-2xl text-white py-4 px-8 rounded-2xl font-bold text-lg transition-all duration-300 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center space-x-3 shadow-lg">
+                        <i class="fas fa-search-medical"></i>
+                        <span>Analyze CT Scan</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+
+                <!-- Image Preview Card -->
+                <div id="image-preview-card" class="glass-effect rounded-3xl p-6 sm:p-8 shadow-glow slide-in hidden" style="animation-delay: 0.1s;">
+                    <div class="flex items-center space-x-3 mb-6">
+                        <div class="medical-gradient p-3 rounded-xl shadow-lg">
+                            <i class="fas fa-eye text-white text-xl"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-900">CT Scan Preview</h2>
+                            <p class="text-gray-600">Uploaded image analysis</p>
+                        </div>
+                    </div>
+
+                    <div class="relative">
+                        <div id="image-container" class="bg-gray-900 rounded-2xl overflow-hidden shadow-2xl image-preview grid-lines">
+                            <img id="preview-image" class="w-full h-64 sm:h-80 object-contain rounded-2xl" alt="CT Scan Preview">
+                        </div>
+                        <div class="absolute top-4 right-4 bg-black/50 text-white px-3 py-1 rounded-full text-sm font-medium backdrop-blur-sm">
+                            <i class="fas fa-image mr-1"></i>
+                            <span id="image-dimensions">CT Scan</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 mt-6">
+                        <div class="text-center p-4 rounded-xl bg-white/50 backdrop-blur-sm border border-white/30">
+                            <i class="fas fa-file-image text-blue-600 text-lg mb-2"></i>
+                            <p class="text-sm font-semibold text-gray-700">Medical Image</p>
+                        </div>
+                        <div class="text-center p-4 rounded-xl bg-white/50 backdrop-blur-sm border border-white/30">
+                            <i class="fas fa-microscope text-green-600 text-lg mb-2"></i>
+                            <p class="text-sm font-semibold text-gray-700">AI Analysis Ready</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div class="glass-effect rounded-3xl p-6 sm:p-8 shadow-glow slide-in" style="animation-delay: 0.2s;">
+                <div class="flex items-center space-x-3 mb-8">
+                    <div class="medical-gradient p-3 rounded-xl shadow-lg">
+                        <i class="fas fa-chart-line text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-900">Analysis Results</h2>
+                        <p class="text-gray-600">Detailed diagnosis report</p>
+                    </div>
+                </div>
+
+                <!-- Loading State -->
+                <div id="loading" class="hidden text-center py-12">
+                    <div class="flex flex-col items-center space-y-6">
+                        <div class="relative">
+                            <div class="w-20 h-20 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <i class="fas fa-lungs text-blue-600 text-2xl"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <p class="text-xl font-semibold text-gray-800 mb-2">Analyzing CT Scan</p>
+                            <p class="text-gray-500">Our AI is examining your scan for abnormalities</p>
+                        </div>
+                        <div class="w-48 bg-gray-200 rounded-full h-2">
+                            <div class="medical-gradient h-2 rounded-full progress-bar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Results Display -->
+                <div id="results" class="hidden space-y-6">
+                    <!-- Prediction Card -->
+                    <div id="prediction-card" class="risk-low text-white rounded-2xl p-6 sm:p-8 transform transition-all duration-500 hover:scale-[1.02]">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
+                            <div class="flex items-center space-x-4">
+                                <div class="bg-white/20 p-3 rounded-xl backdrop-blur-sm">
+                                    <i class="fas fa-diagnoses text-2xl"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-2xl font-bold">Diagnosis Result</h3>
+                                    <p class="text-white/80">AI-powered analysis complete</p>
+                                </div>
+                            </div>
+                            <div id="risk-badge" class="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full font-semibold text-sm sm:text-base">
+                                Low Risk
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center">
+                                <p class="text-white/80 text-sm mb-1">Prediction</p>
+                                <p id="prediction-text" class="text-2xl font-bold">Normal</p>
+                            </div>
+                            <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center">
+                                <p class="text-white/80 text-sm mb-1">Confidence</p>
+                                <p id="confidence-text" class="text-2xl font-bold">94.5%</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chart & Probabilities -->
+                    <div class="bg-white rounded-2xl p-6 sm:p-8 shadow-lg border border-gray-100">
+                        <h4 class="text-xl font-bold text-gray-900 mb-6 flex items-center space-x-3">
+                            <i class="fas fa-chart-pie text-purple-600"></i>
+                            <span>Probability Distribution</span>
+                        </h4>
+                        
+                        <!-- Chart Container -->
+                        <div class="mb-8">
+                            <canvas id="probabilityChart" width="400" height="200"></canvas>
+                        </div>
+                        
+                        <div class="space-y-6">
+                            <!-- Normal -->
+                            <div data-class="normal">
+                                <div class="flex justify-between mb-3">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                                        <span class="font-semibold text-gray-700">Normal Tissue</span>
+                                    </div>
+                                    <span class="font-bold text-green-600 text-lg">94.5%</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
+                                    <div class="bg-gradient-to-r from-green-500 to-emerald-500 h-4 rounded-full progress-bar" style="width: 94.5%"></div>
+                                </div>
+                            </div>
+                            
+                            <!-- Benign -->
+                            <div data-class="benign">
+                                <div class="flex justify-between mb-3">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                                        <span class="font-semibold text-gray-700">Benign Tumor</span>
+                                    </div>
+                                    <span class="font-bold text-yellow-600 text-lg">4.2%</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
+                                    <div class="bg-gradient-to-r from-yellow-500 to-amber-500 h-4 rounded-full progress-bar" style="width: 4.2%"></div>
+                                </div>
+                            </div>
+                            
+                            <!-- Malignant -->
+                            <div data-class="malignant">
+                                <div class="flex justify-between mb-3">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-3 h-3 bg-red-500 rounded-full"></div>
+                                        <span class="font-semibold text-gray-700">Malignant Cancer</span>
+                                    </div>
+                                    <span class="font-bold text-red-600 text-lg">1.3%</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
+                                    <div class="bg-gradient-to-r from-red-500 to-pink-500 h-4 rounded-full progress-bar" style="width: 1.3%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recommendation -->
+                    <div id="recommendation-card" class="medical-gradient text-white rounded-2xl p-6 sm:p-8 transform transition-all duration-500 hover:scale-[1.02]">
+                        <div class="flex items-start space-x-4">
+                            <div class="bg-white/20 p-3 rounded-xl backdrop-blur-sm flex-shrink-0">
+                                <i class="fas fa-user-md text-2xl"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-xl font-bold mb-3">Medical Recommendation</h4>
+                                <div id="recommendation-text" class="text-white/90 leading-relaxed space-y-2">
+                                    <!-- Recommendations will be populated here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PDF Report Section -->
+                    <div class="bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-2xl p-6 sm:p-8 transform transition-all duration-500 hover:scale-[1.02]">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="flex items-center space-x-4">
+                                <div class="bg-white/20 p-3 rounded-xl backdrop-blur-sm">
+                                    <i class="fas fa-file-pdf text-2xl"></i>
+                                </div>
+                                <div>
+                                    <h4 class="text-xl font-bold">Medical Report</h4>
+                                    <p class="text-white/80">Download comprehensive PDF report</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-4">
+                            <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+                                <p class="text-white/90 mb-2">Generate a detailed medical report including:</p>
+                                <ul class="text-white/80 text-sm space-y-1 list-disc list-inside">
+                                    <li>Complete diagnosis analysis</li>
+                                    <li>Probability distributions</li>
+                                    <li>Medical recommendations</li>
+                                    <li>Technical specifications</li>
+                                    <li>Professional disclaimers</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <button id="download-pdf" class="bg-white text-purple-600 hover:bg-gray-100 py-3 px-6 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 flex items-center justify-center space-x-2">
+                                    <i class="fas fa-download"></i>
+                                    <span>Download PDF Report</span>
+                                </button>
+                                
+                                <button id="patient-info-btn" class="bg-white/20 hover:bg-white/30 text-white py-3 px-6 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 flex items-center justify-center space-x-2 backdrop-blur-sm">
+                                    <i class="fas fa-user-plus"></i>
+                                    <span>Add Patient Info</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Empty State -->
+                <div id="empty-state" class="text-center py-12">
+                    <div class="space-y-6">
+                        <div class="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-r from-gray-200 to-gray-300 rounded-3xl shadow-inner">
+                            <i class="fas fa-chart-bar text-gray-400 text-3xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-xl font-semibold text-gray-700 mb-2">Ready for Analysis</p>
+                            <p class="text-gray-500">Upload a CT scan to get detailed insights</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Section -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-16">
+            <div class="glass-effect rounded-2xl p-4 sm:p-6 text-center transform transition-all duration-300 hover:scale-105">
+                <div class="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 medical-gradient rounded-2xl shadow-lg mb-3 sm:mb-4">
+                    <i class="fas fa-check-circle text-white text-lg sm:text-2xl"></i>
+                </div>
+                <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-1 sm:mb-2">95%</h3>
+                <p class="text-xs sm:text-sm text-gray-600 font-medium">Accuracy Rate</p>
+            </div>
+            
+            <div class="glass-effect rounded-2xl p-4 sm:p-6 text-center transform transition-all duration-300 hover:scale-105">
+                <div class="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 medical-gradient rounded-2xl shadow-lg mb-3 sm:mb-4">
+                    <i class="fas fa-clock text-white text-lg sm:text-2xl"></i>
+                </div>
+                <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-1 sm:mb-2">< 30s</h3>
+                <p class="text-xs sm:text-sm text-gray-600 font-medium">Analysis Time</p>
+            </div>
+            
+            <div class="glass-effect rounded-2xl p-4 sm:p-6 text-center transform transition-all duration-300 hover:scale-105">
+                <div class="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 medical-gradient rounded-2xl shadow-lg mb-3 sm:mb-4">
+                    <i class="fas fa-database text-white text-lg sm:text-2xl"></i>
+                </div>
+                <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-1 sm:mb-2">10K+</h3>
+                <p class="text-xs sm:text-sm text-gray-600 font-medium">Scans Analyzed</p>
+            </div>
+            
+            <div class="glass-effect rounded-2xl p-4 sm:p-6 text-center transform transition-all duration-300 hover:scale-105">
+                <div class="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 medical-gradient rounded-2xl shadow-lg mb-3 sm:mb-4">
+                    <i class="fas fa-hospital-user text-white text-lg sm:text-2xl"></i>
+                </div>
+                <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-1 sm:mb-2">100+</h3>
+                <p class="text-xs sm:text-sm text-gray-600 font-medium">Medical Partners</p>
+            </div>
+        </div>
+
+        <!-- Features Grid -->
+        <div class="glass-effect rounded-3xl p-8 sm:p-12 shadow-glow">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">Why Choose PulmoScan AI?</h2>
+                <p class="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto">Advanced technology designed for healthcare professionals and patients</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+                <div class="text-center p-6 transform transition-all duration-300 hover:scale-105">
+                    <div class="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 medical-gradient rounded-2xl shadow-lg mb-4 sm:mb-6">
+                        <i class="fas fa-robot text-white text-xl sm:text-2xl"></i>
+                    </div>
+                    <h3 class="text-lg sm:text-xl font-bold text-gray-900 mb-2 sm:mb-3">AI-Powered Analysis</h3>
+                    <p class="text-sm sm:text-base text-gray-600">Deep learning algorithms trained on millions of medical images</p>
+                </div>
+                
+                <div class="text-center p-6 transform transition-all duration-300 hover:scale-105">
+                    <div class="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 medical-gradient rounded-2xl shadow-lg mb-4 sm:mb-6">
+                        <i class="fas fa-earlybirds text-white text-xl sm:text-2xl"></i>
+                    </div>
+                    <h3 class="text-lg sm:text-xl font-bold text-gray-900 mb-2 sm:mb-3">Early Detection</h3>
+                    <p class="text-sm sm:text-base text-gray-600">Identify potential issues months before traditional methods</p>
+                </div>
+                
+                <div class="text-center p-6 transform transition-all duration-300 hover:scale-105">
+                    <div class="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 medical-gradient rounded-2xl shadow-lg mb-4 sm:mb-6">
+                        <i class="fas fa-shield-alt text-white text-xl sm:text-2xl"></i>
+                    </div>
+                    <h3 class="text-lg sm:text-xl font-bold text-gray-900 mb-2 sm:mb-3">HIPAA Compliant</h3>
+                    <p class="text-sm sm:text-base text-gray-600">Enterprise-grade security and privacy protection</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="relative z-10 mt-20">
+        <div class="glass-effect shadow-glow mx-4 lg:mx-8 mb-4 rounded-3xl border border-white/30">
+            <div class="max-w-7xl mx-auto px-6 py-8">
+                <div class="text-center">
+                    <div class="flex justify-center items-center space-x-4 mb-4">
+                        <div class="medical-gradient p-2 rounded-lg">
+                            <i class="fas fa-lungs text-white"></i>
+                        </div>
+                        <span class="text-lg font-bold text-gray-900">PulmoScan AI</span>
+                    </div>
+                    <p class="text-gray-600 mb-4 max-w-2xl mx-auto">
+                        Advanced lung cancer detection powered by artificial intelligence. Helping medical professionals make faster, more accurate diagnoses.
+                    </p>
+                    <div class="text-sm text-gray-500">
+                        <p>© 2024 PulmoScan AI. For screening purposes only. Always consult healthcare professionals for medical diagnosis.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Patient Information Modal -->
+    <div id="patient-modal" class="fixed inset-0 modal-overlay flex items-center justify-center z-50 hidden p-4">
+        <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full mx-auto shadow-2xl transform transition-all duration-300 slide-in">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-2xl font-bold text-gray-900">Patient Information</h3>
+                <button id="close-modal" class="text-gray-500 hover:text-gray-700 transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Patient ID</label>
+                    <input type="text" id="patient-id" placeholder="Enter patient ID" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300">
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Age</label>
+                        <input type="number" id="patient-age" placeholder="Age" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Gender</label>
+                        <select id="patient-gender" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300">
+                            <option value="">Select Gender</option>
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Referring Physician</label>
+                    <input type="text" id="patient-physician" placeholder="Dr. Name" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300">
+                </div>
+                
+                <div class="flex space-x-4 pt-4">
+                    <button id="save-patient-info" class="flex-1 medical-gradient text-white py-3 px-6 rounded-xl font-semibold hover:shadow-lg transition-all duration-300 transform hover:scale-105">
+                        Save & Generate Report
+                    </button>
+                    <button id="cancel-patient-info" class="flex-1 bg-gray-300 text-gray-700 py-3 px-6 rounded-xl font-semibold hover:bg-gray-400 transition-colors">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize elements
+            const uploadArea = document.getElementById('upload-area');
+            const fileInput = document.getElementById('file-input');
+            const fileInfo = document.getElementById('file-info');
+            const fileName = document.getElementById('file-name');
+            const fileSize = document.getElementById('file-size');
+            const removeFile = document.getElementById('remove-file');
+            const analyzeBtn = document.getElementById('analyze-btn');
+            const loading = document.getElementById('loading');
+            const results = document.getElementById('results');
+            const emptyState = document.getElementById('empty-state');
+            const imagePreviewCard = document.getElementById('image-preview-card');
+            const previewImage = document.getElementById('preview-image');
+            const imageDimensions = document.getElementById('image-dimensions');
+            
+            // Results elements
+            const predictionCard = document.getElementById('prediction-card');
+            const riskBadge = document.getElementById('risk-badge');
+            const predictionText = document.getElementById('prediction-text');
+            const confidenceText = document.getElementById('confidence-text');
+            const recommendationText = document.getElementById('recommendation-text');
+
+            // Modal elements
+            const patientModal = document.getElementById('patient-modal');
+            const closeModal = document.getElementById('close-modal');
+            const cancelPatientInfo = document.getElementById('cancel-patient-info');
+            const savePatientInfo = document.getElementById('save-patient-info');
+            const downloadPdf = document.getElementById('download-pdf');
+            const patientInfoBtn = document.getElementById('patient-info-btn');
+
+            let selectedFile = null;
+            let progressInterval;
+            let probabilityChart = null;
+            let currentAnalysisData = null;
+
+            // Upload area interactions
+            uploadArea.addEventListener('click', () => fileInput.click());
+
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    handleFileSelect(e.target.files[0]);
+                }
+            });
+
+            // Drag and drop
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('border-blue-400', 'bg-blue-50/80', 'scale-105');
+            });
+
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('border-blue-400', 'bg-blue-50/80', 'scale-105');
+            });
+
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('border-blue-400', 'bg-blue-50/80', 'scale-105');
+                
+                if (e.dataTransfer.files.length > 0) {
+                    handleFileSelect(e.dataTransfer.files[0]);
+                }
+            });
+
+            removeFile.addEventListener('click', (e) => {
+                e.stopPropagation();
+                resetFileSelection();
+            });
+
+            analyzeBtn.addEventListener('click', analyzeImage);
+
+            // Modal event listeners
+            closeModal.addEventListener('click', hidePatientModal);
+            cancelPatientInfo.addEventListener('click', hidePatientModal);
+            savePatientInfo.addEventListener('click', generateReportWithPatientInfo);
+            downloadPdf.addEventListener('click', () => generatePDFReport());
+            patientInfoBtn.addEventListener('click', showPatientModal);
+
+            function handleFileSelect(file) {
+                const validTypes = ['.png', '.jpg', '.jpeg', '.bmp', '.tiff'];
+                const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+                
+                if (!validTypes.includes(fileExtension)) {
+                    showNotification('Please upload a valid image file (PNG, JPG, JPEG, BMP, TIFF)', 'error');
+                    return;
+                }
+
+                selectedFile = file;
+                
+                // Update file info
+                fileName.textContent = file.name;
+                fileSize.textContent = formatFileSize(file.size);
+                fileInfo.classList.remove('hidden');
+                fileInfo.classList.add('slide-in');
+                analyzeBtn.disabled = false;
+                
+                // Update upload area
+                uploadArea.innerHTML = `
+                    <div class="space-y-6 slide-in">
+                        <div class="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-green-500 to-emerald-500 rounded-2xl shadow-lg">
+                            <i class="fas fa-check-circle text-white text-2xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-xl font-semibold text-gray-800 mb-2">Ready to Analyze</p>
+                            <p class="text-gray-500">File successfully uploaded</p>
+                            <p class="text-sm text-gray-400 mt-2">Click to choose a different file</p>
+                        </div>
+                    </div>
+                `;
+
+                // Preview image
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImage.src = e.target.result;
+                    previewImage.onload = function() {
+                        imageDimensions.textContent = `${this.naturalWidth} × ${this.naturalHeight}`;
+                    };
+                    imagePreviewCard.classList.remove('hidden');
+                    imagePreviewCard.classList.add('slide-in');
+                };
+                reader.readAsDataURL(file);
+                
+                showNotification('CT scan uploaded successfully! Click "Analyze CT Scan" to begin.', 'success');
+            }
+
+            function resetFileSelection() {
+                selectedFile = null;
+                fileInput.value = '';
+                fileInfo.classList.add('hidden');
+                imagePreviewCard.classList.add('hidden');
+                analyzeBtn.disabled = true;
+                
+                uploadArea.innerHTML = `
+                    <div class="space-y-6">
+                        <div class="inline-flex items-center justify-center w-20 h-20 medical-gradient rounded-2xl shadow-lg">
+                            <i class="fas fa-file-medical-alt text-white text-2xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-xl font-semibold text-gray-800 mb-2">Upload CT Scan Image</p>
+                            <p class="text-gray-500">Drag & drop or click to browse</p>
+                            <p class="text-sm text-gray-400 mt-2">Supports: PNG, JPG, JPEG, BMP, TIFF</p>
+                        </div>
+                    </div>
+                `;
+            }
+
+            function formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+
+            async function analyzeImage() {
+                if (!selectedFile) return;
+
+                // Enhanced loading state
+                loading.classList.remove('hidden');
+                results.classList.add('hidden');
+                emptyState.classList.add('hidden');
+                analyzeBtn.disabled = true;
+
+                // Simulate progress animation
+                simulateProgress();
+
+                const formData = new FormData();
+                formData.append('file', selectedFile);
+
+                try {
+                    const response = await fetch('/api/predict', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        setTimeout(() => {
+                            displayResults(data);
+                            clearInterval(progressInterval);
+                            showNotification('Analysis completed successfully!', 'success');
+                        }, 1000);
+                    } else {
+                        throw new Error(data.error || 'Analysis failed');
+                    }
+                } catch (error) {
+                    clearInterval(progressInterval);
+                    showNotification('Error analyzing image: ' + error.message, 'error');
+                    console.error('Analysis error:', error);
+                    
+                    loading.classList.add('hidden');
+                    analyzeBtn.disabled = false;
+                }
+            }
+
+            function simulateProgress() {
+                let progress = 0;
+                const progressBar = document.querySelector('.progress-bar');
+                
+                progressInterval = setInterval(() => {
+                    progress += Math.random() * 10;
+                    if (progress > 90) progress = 90;
+                    progressBar.style.width = progress + '%';
+                }, 200);
+            }
+
+            function displayResults(data) {
+                currentAnalysisData = data;
+                
+                // Update risk styling
+                const riskConfig = {
+                    low: { class: 'risk-low', badge: 'Low Risk', icon: 'fa-smile' },
+                    medium: { class: 'risk-medium', badge: 'Medium Risk', icon: 'fa-meh' },
+                    high: { class: 'risk-high', badge: 'High Risk', icon: 'fa-frown' }
+                };
+                
+                const riskConfigItem = riskConfig[data.risk_level] || riskConfig.low;
+                predictionCard.className = `${riskConfigItem.class} text-white rounded-2xl p-6 sm:p-8 transform transition-all duration-500 hover:scale-[1.02]`;
+                riskBadge.textContent = riskConfigItem.badge;
+
+                // Update prediction and confidence
+                predictionText.textContent = data.prediction.charAt(0).toUpperCase() + data.prediction.slice(1);
+                confidenceText.textContent = `${(data.confidence * 100).toFixed(1)}%`;
+
+                // Update probabilities with animation
+                updateProbabilities(data.probabilities);
+
+                // Update chart
+                updateChart(data.probabilities);
+
+                // Update recommendation
+                updateRecommendation(data.recommendation);
+
+                // Show results with animation
+                loading.classList.add('hidden');
+                results.classList.remove('hidden');
+                results.classList.add('slide-in');
+            }
+
+            function updateProbabilities(probabilities) {
+                setTimeout(() => {
+                    Object.keys(probabilities).forEach(className => {
+                        const percentage = (probabilities[className] * 100).toFixed(1);
+                        const progressBar = document.querySelector(`[data-class="${className}"] .progress-bar`);
+                        const percentageElement = document.querySelector(`[data-class="${className}"] .font-bold.text-lg`);
+                        
+                        if (progressBar && percentageElement) {
+                            progressBar.style.width = `${percentage}%`;
+                            percentageElement.textContent = `${percentage}%`;
+                        }
+                    });
+                }, 300);
+            }
+
+            function updateRecommendation(recommendations) {
+                recommendationText.innerHTML = '';
+                recommendations.forEach(rec => {
+                    const p = document.createElement('p');
+                    p.textContent = rec;
+                    p.className = 'text-white/90 leading-relaxed';
+                    recommendationText.appendChild(p);
+                });
+            }
+
+            function updateChart(probabilities) {
+                const ctx = document.getElementById('probabilityChart').getContext('2d');
+                
+                // Destroy existing chart
+                if (probabilityChart) {
+                    probabilityChart.destroy();
+                }
+
+                const labels = ['Normal', 'Benign', 'Malignant'];
+                const data = [
+                    (probabilities.normal * 100).toFixed(1),
+                    (probabilities.benign * 100).toFixed(1),
+                    (probabilities.malignant * 100).toFixed(1)
+                ];
+                const backgroundColors = ['#10b981', '#f59e0b', '#ef4444'];
+                const borderColors = ['#059669', '#d97706', '#dc2626'];
+
+                probabilityChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: data,
+                            backgroundColor: backgroundColors,
+                            borderColor: borderColors,
+                            borderWidth: 2,
+                            hoverOffset: 15
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    padding: 20,
+                                    usePointStyle: true,
+                                    pointStyle: 'circle',
+                                    font: {
+                                        size: 12,
+                                        weight: '600'
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return `${context.label}: ${context.parsed}%`;
+                                    }
+                                }
+                            }
+                        },
+                        animation: {
+                            animateScale: true,
+                            animateRotate: true
+                        }
+                    }
+                });
+            }
+
+            function showPatientModal() {
+                patientModal.classList.remove('hidden');
+            }
+
+            function hidePatientModal() {
+                patientModal.classList.add('hidden');
+            }
+
+            function generateReportWithPatientInfo() {
+                const patientInfo = {
+                    patient_id: document.getElementById('patient-id').value || 'N/A',
+                    age: document.getElementById('patient-age').value || 'N/A',
+                    gender: document.getElementById('patient-gender').value || 'N/A',
+                    physician: document.getElementById('patient-physician').value || 'N/A'
+                };
+                
+                hidePatientModal();
+                generatePDFReport(patientInfo);
+            }
+
+            async function generatePDFReport(patientInfo = {}) {
+                if (!currentAnalysisData) {
+                    showNotification('No analysis data available. Please analyze an image first.', 'error');
+                    return;
+                }
+
+                try {
+                    showNotification('Generating medical report...', 'info');
+                    
+                    const response = await fetch('/api/generate-report', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            analysis_data: currentAnalysisData,
+                            patient_info: patientInfo
+                        })
+                    });
+
+                    if (response.ok) {
+                        const blob = await response.blob();
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.style.display = 'none';
+                        a.href = url;
+                        a.download = `lung_cancer_report_${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.pdf`;
+                        document.body.appendChild(a);
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                        showNotification('PDF report downloaded successfully!', 'success');
+                    } else {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || 'Failed to generate report');
+                    }
+                } catch (error) {
+                    console.error('PDF generation error:', error);
+                    showNotification('Error generating PDF report: ' + error.message, 'error');
+                }
+            }
+
+            function showNotification(message, type = 'info') {
+                const notification = document.createElement('div');
+                const bgColor = type === 'error' ? 'bg-red-500' : type === 'success' ? 'bg-green-500' : 'bg-blue-500';
+                const icon = type === 'error' ? 'exclamation-triangle' : type === 'success' ? 'check-circle' : 'info-circle';
+                
+                notification.className = `fixed top-4 right-4 ${bgColor} text-white px-6 py-4 rounded-2xl shadow-2xl z-50 transform transition-all duration-300 translate-x-full max-w-sm`;
+                notification.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <i class="fas fa-${icon} text-lg"></i>
+                        <span class="font-medium">${message}</span>
+                    </div>
+                `;
+                
+                document.body.appendChild(notification);
+                
+                setTimeout(() => {
+                    notification.classList.remove('translate-x-full');
+                }, 100);
+                
+                setTimeout(() => {
+                    notification.classList.add('translate-x-full');
+                    setTimeout(() => {
+                        document.body.removeChild(notification);
+                    }, 300);
+                }, 5000);
+            }
+
+            // Enhanced health check
+            async function checkServerHealth() {
+                try {
+                    const response = await fetch('/api/health');
+                    const data = await response.json();
+                    
+                    const statusElement = document.querySelector('#status div');
+                    const statusText = document.querySelector('#status span');
+                    
+                    if (data.model_loaded) {
+                        statusElement.className = 'w-2.5 h-2.5 bg-green-500 rounded-full pulse-dot';
+                        statusText.textContent = 'System Online';
+                    } else {
+                        statusElement.className = 'w-2.5 h-2.5 bg-red-500 rounded-full';
+                        statusText.textContent = 'Model Not Loaded';
+                        showNotification('AI model not loaded. Please check server configuration.', 'error');
+                    }
+                } catch (error) {
+                    console.error('Health check failed:', error);
+                    showNotification('Cannot connect to server', 'error');
+                }
+            }
+
+            // Initialize
+            checkServerHealth();
+        });
+    </script>
+</body>
+</html>
