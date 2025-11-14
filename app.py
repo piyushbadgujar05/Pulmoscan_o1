@@ -2,7 +2,7 @@ import os
 import io
 import base64
 from datetime import datetime
-from flask import Flask, request, jsonify, render_template, send_file
+from flask import Flask, request, jsonify, render_template, send_file, redirect, url_for, session
 from flask_cors import CORS
 import torch
 import torch.nn as nn
@@ -19,12 +19,43 @@ from reportlab.graphics.charts.piecharts import Pie
 from reportlab.graphics.charts.barcharts import VerticalBarChart
 from reportlab.graphics import renderPDF
 
+# Firebase Admin SDK
+import firebase_admin
+from firebase_admin import credentials, firestore, storage, auth as firebase_auth
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
+app.secret_key = 'pulmoscan-secret-key-2024'  
 CORS(app)
+
+
+FIREBASE_CRED_PATH = "pulmoscan-a2b88-firebase-adminsdk-fbsvc-72f55a0a6a.json"
+
+try:
+    cred = credentials.Certificate(FIREBASE_CRED_PATH)
+    firebase_admin.initialize_app(cred, {
+        "storageBucket": "pulmoscan-a2b88.firebasestorage.app"
+    })
+    firestore_db = firestore.client()
+    storage_bucket = storage.bucket()
+    FIREBASE_INITIALIZED = True
+    logger.info("✅ Firebase initialized successfully")
+except Exception as e:
+    logger.error(f"❌ Firebase initialization failed: {e}")
+    FIREBASE_INITIALIZED = False
+
+
+def login_required(f):
+    def decorated_function(*args, **kwargs):
+        if 'user' not in session:
+            return redirect('/login')
+        return f(*args, **kwargs)
+    decorated_function.__name__ = f.__name__
+    return decorated_function
+
 
 class LungCancerModel:
     def __init__(self, model_path):
@@ -89,7 +120,7 @@ class LungCancerModel:
                 'recommendation': recommendation,
                 'risk_level': self.get_risk_level(prediction),
                 'timestamp': datetime.now().isoformat(),
-                'image_data': base64.b64encode(image_bytes).decode('utf-8') if len(image_bytes) < 5000000 else None  # Limit size for PDF
+                'image_data': base64.b64encode(image_bytes).decode('utf-8') if len(image_bytes) < 5000000 else None
             }
         except Exception as e:
             logger.error(f"Prediction error: {e}")
@@ -107,13 +138,13 @@ class LungCancerModel:
                 "No immediate follow-up required"
             ],
             'benign': [
-                f"Benign (non-cancerous) tissue detected (Confidence: {confidence:.1%})",
-                "Consult with a pulmonologist within 2-4 weeks",
-                "Consider follow-up CT scan in 3-6 months",
-                "Monitor for any changes in symptoms"
+                f"BENIGN CANCER DETECTED (Confidence: {confidence:.1%})",
+                "URGENT: Consult with an oncologist immediately",
+                "Schedule biopsy for confirmation",
+                "Begin treatment planning immediately"
             ],
             'malignant': [
-                f"POTENTIAL CANCER DETECTED (Confidence: {confidence:.1%})",
+                f"MALIGNANT CANCER DETECTED (Confidence: {confidence:.1%})",
                 "URGENT: Consult with an oncologist immediately",
                 "Schedule biopsy for confirmation",
                 "Begin treatment planning immediately"
@@ -124,7 +155,7 @@ class LungCancerModel:
     def get_risk_level(self, prediction):
         risk_levels = {
             'normal': 'low',
-            'benign': 'medium', 
+            'benign': 'high',  # Changed from 'medium' to 'high'
             'malignant': 'high'
         }
         return risk_levels.get(prediction, 'unknown')
@@ -133,254 +164,198 @@ class LungCancerModel:
 try:
     model = LungCancerModel('lung_cancer_model.pth')
     MODEL_LOADED = True
-    logger.info("Lung Cancer Detection System Ready!")
+    logger.info("✅ Lung Cancer Detection System Ready!")
 except Exception as e:
     MODEL_LOADED = False
-    logger.error(f"Failed to load model: {e}")
+    logger.error(f"❌ Failed to load model: {e}")
 
-def generate_pdf_report(analysis_data, patient_info=None):
-    """Generate a comprehensive PDF report"""
+# --------------------------------------------------------------------------------
+# Firebase Helper Functions
+# --------------------------------------------------------------------------------
+def upload_to_firebase_storage(file_bytes, filename, user_id):
+    """Upload image to Firebase Storage with user folder"""
     try:
-        # Create buffer for PDF
-        buffer = io.BytesIO()
-        
-        # Create document
-        doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=0.5*inch, bottomMargin=0.5*inch)
-        story = []
-        styles = getSampleStyleSheet()
-        
-        # Custom styles
-        title_style = ParagraphStyle(
-            'CustomTitle',
-            parent=styles['Heading1'],
-            fontSize=18,
-            textColor=colors.HexColor('#1e40af'),
-            spaceAfter=12,
-            alignment=1  # Center
-        )
-        
-        heading_style = ParagraphStyle(
-            'CustomHeading',
-            parent=styles['Heading2'],
-            fontSize=14,
-            textColor=colors.HexColor('#1e40af'),
-            spaceAfter=6
-        )
-        
-        normal_style = ParagraphStyle(
-            'Normal',
-            parent=styles['Normal'],
-            fontSize=10,
-            spaceAfter=6
-        )
-        
-        # Header
-        story.append(Paragraph("PULMOSCAN AI - MEDICAL IMAGING REPORT", title_style))
-        story.append(Spacer(1, 12))
-        
-        # Report Metadata
-        metadata_data = [
-            ['Report ID:', f"LC-{datetime.now().strftime('%Y%m%d-%H%M%S')}"],
-            ['Generated:', datetime.now().strftime('%Y-%m-%d %H:%M:%S')],
-            ['Analysis Type:', 'Lung Cancer Detection'],
-            ['AI Model:', 'ResNet50 Deep Learning'],
-            ['Confidence Threshold:', '95%']
-        ]
-        
-        metadata_table = Table(metadata_data, colWidths=[2*inch, 3*inch])
-        metadata_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#dbeafe')),
-            ('BACKGROUND', (1, 0), (1, -1), colors.white),
-            ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
-            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, -1), 9),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
-            ('TOPPADDING', (0, 0), (-1, -1), 6),
-            ('GRID', (0, 0), (-1, -1), 1, colors.grey)
-        ]))
-        story.append(metadata_table)
-        story.append(Spacer(1, 12))
-        
-        # Patient Information (if provided)
-        if patient_info:
-            story.append(Paragraph("PATIENT INFORMATION", heading_style))
-            patient_data = [
-                ['Patient ID:', patient_info.get('patient_id', 'N/A')],
-                ['Age:', patient_info.get('age', 'N/A')],
-                ['Gender:', patient_info.get('gender', 'N/A')],
-                ['Referring Physician:', patient_info.get('physician', 'N/A')]
-            ]
-            patient_table = Table(patient_data, colWidths=[1.5*inch, 1.5*inch, 1*inch, 2*inch])
-            patient_table.setStyle(TableStyle([
-                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#fef3c7')),
-                ('BACKGROUND', (0, 1), (-1, -1), colors.white),
-                ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
-                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-                ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
-                ('FONTSIZE', (0, 0), (-1, -1), 9),
-                ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
-                ('GRID', (0, 0), (-1, -1), 1, colors.grey)
-            ]))
-            story.append(patient_table)
-            story.append(Spacer(1, 12))
-        
-        # Diagnosis Results
-        story.append(Paragraph("DIAGNOSIS RESULTS", heading_style))
-        
-        risk_color = {
-            'low': colors.HexColor('#10b981'),
-            'medium': colors.HexColor('#f59e0b'),
-            'high': colors.HexColor('#ef4444')
-        }.get(analysis_data['risk_level'], colors.black)
-        
-        diagnosis_data = [
-            ['Primary Finding:', analysis_data['prediction'].upper()],
-            ['Confidence Level:', f"{analysis_data['confidence']:.1%}"],
-            ['Risk Assessment:', analysis_data['risk_level'].upper()],
-            ['AI Model Accuracy:', '95.2% (Validated)']
-        ]
-        
-        diagnosis_table = Table(diagnosis_data, colWidths=[1.5*inch, 4*inch])
-        diagnosis_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#e5e7eb')),
-            ('BACKGROUND', (1, 0), (1, -1), colors.white),
-            ('TEXTCOLOR', (1, 2), (1, 2), risk_color),
-            ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
-            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, -1), 10),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
-            ('GRID', (0, 0), (-1, -1), 1, colors.grey)
-        ]))
-        story.append(diagnosis_table)
-        story.append(Spacer(1, 12))
-        
-        # Probability Distribution
-        story.append(Paragraph("PROBABILITY DISTRIBUTION", heading_style))
-        
-        prob_data = [
-            ['Classification', 'Probability', 'Risk Level'],
-            ['Normal Tissue', f"{analysis_data['probabilities']['normal']:.1%}", 'Low'],
-            ['Benign Tumor', f"{analysis_data['probabilities']['benign']:.1%}", 'Medium'],
-            ['Malignant Cancer', f"{analysis_data['probabilities']['malignant']:.1%}", 'High']
-        ]
-        
-        prob_table = Table(prob_data, colWidths=[2*inch, 1.5*inch, 1.5*inch])
-        prob_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1e40af')),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-            ('BACKGROUND', (0, 1), (0, -1), colors.HexColor('#f3f4f6')),
-            ('BACKGROUND', (1, 1), (2, 1), colors.HexColor('#d1fae5')),
-            ('BACKGROUND', (1, 2), (2, 2), colors.HexColor('#fef3c7')),
-            ('BACKGROUND', (1, 3), (2, 3), colors.HexColor('#fee2e2')),
-            ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-            ('FONTSIZE', (0, 0), (-1, -1), 9),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
-            ('GRID', (0, 0), (-1, -1), 1, colors.grey)
-        ]))
-        story.append(prob_table)
-        story.append(Spacer(1, 12))
-        
-        # Medical Recommendations
-        story.append(Paragraph("MEDICAL RECOMMENDATIONS", heading_style))
-        
-        recommendations = analysis_data['recommendation']
-        for i, recommendation in enumerate(recommendations, 1):
-            story.append(Paragraph(f"{i}. {recommendation}", normal_style))
-        
-        story.append(Spacer(1, 12))
-        
-        # Technical Details
-        story.append(Paragraph("TECHNICAL SPECIFICATIONS", heading_style))
-        
-        tech_data = [
-            ['Parameter', 'Value'],
-            ['AI Model Architecture', 'ResNet50 with Transfer Learning'],
-            ['Training Dataset', '10,000+ CT Scans'],
-            ['Validation Accuracy', '95.2%'],
-            ['Sensitivity (Malignant)', '96.8%'],
-            ['Specificity (Normal)', '94.1%'],
-            ['Analysis Time', '< 30 seconds'],
-            ['Image Processing', '384x384 pixels RGB']
-        ]
-        
-        tech_table = Table(tech_data, colWidths=[2.5*inch, 3*inch])
-        tech_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#374151')),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-            ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#f9fafb')),
-            ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
-            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-            ('FONTSIZE', (0, 0), (-1, -1), 8),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
-            ('GRID', (0, 0), (-1, -1), 1, colors.grey)
-        ]))
-        story.append(tech_table)
-        story.append(Spacer(1, 12))
-        
-        # Important Disclaimers
-        story.append(Paragraph("IMPORTANT DISCLAIMERS", heading_style))
-        
-        disclaimers = [
-            "This report is generated by an AI system and should be used as a screening tool only.",
-            "Final diagnosis must be made by qualified healthcare professionals.",
-            "The AI model has limitations and may not detect all abnormalities.",
-            "Clinical correlation with patient history and other tests is essential.",
-            "False positives and false negatives are possible with any diagnostic tool.",
-            "This report does not constitute medical advice."
-        ]
-        
-        for disclaimer in disclaimers:
-            story.append(Paragraph(f"• {disclaimer}", normal_style))
-        
-        story.append(Spacer(1, 12))
-        
-        # Footer
-        footer_text = """
-        <para alignment='center'>
-        <font color='gray' size=8>
-        PulmoScan AI - Advanced Lung Cancer Detection System<br/>
-        Generated on {date} | Report ID: LC-{report_id}<br/>
-        For medical use only | Confidential Patient Information
-        </font>
-        </para>
-        """.format(
-            date=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            report_id=datetime.now().strftime('%Y%m%d-%H%M%S')
-        )
-        
-        story.append(Paragraph(footer_text, styles['Normal']))
-        
-        # Build PDF
-        doc.build(story)
-        buffer.seek(0)
-        
-        return buffer
-        
+        blob_path = f"users/{user_id}/ct_scans/{filename}"
+        blob = storage_bucket.blob(blob_path)
+        blob.upload_from_string(file_bytes, content_type="image/jpeg")
+        blob.make_public()
+        return blob.public_url
     except Exception as e:
-        logger.error(f"PDF generation error: {e}")
-        raise
+        logger.error(f"Storage upload error: {e}")
+        return None
+
+def save_to_firestore(analysis_data, user_id):
+    """Save analysis results to Firestore"""
+    try:
+        doc_ref = firestore_db.collection("users").document(user_id).collection("analysis_results").document()
+        analysis_data["id"] = doc_ref.id
+        analysis_data["user_id"] = user_id
+        analysis_data["created_at"] = datetime.now()
+        
+        doc_ref.set(analysis_data)
+        return doc_ref.id
+    except Exception as e:
+        logger.error(f"Firestore save error: {e}")
+        return None
+
+# --------------------------------------------------------------------------------
+# Routes
+# --------------------------------------------------------------------------------
 
 @app.route('/')
 def home():
+    """Redirect to login or main app based on authentication"""
+    if 'user' in session:
+        return render_template('index.html')
+    return redirect('/login')
+
+@app.route('/login')
+def login_page():
+    """Login page"""
+    if 'user' in session:
+        return redirect('/')
+    return render_template('login.html')
+
+@app.route('/signup')
+def signup_page():
+    """Signup page"""
+    if 'user' in session:
+        return redirect('/')
+    return render_template('signup.html')
+
+@app.route('/api/auth/login', methods=['POST'])
+def api_login():
+    """API endpoint for login"""
+    try:
+        data = request.get_json()
+        email = data.get('email')
+        password = data.get('password')
+        
+        # For demo purposes - in production, use Firebase Auth SDK on frontend
+        # This is a simplified version that checks against Firestore
+        users_ref = firestore_db.collection("users")
+        query = users_ref.where("email", "==", email).limit(1).get()
+        
+        if not query:
+            return jsonify({
+                'success': False,
+                'error': 'Invalid credentials'
+            }), 401
+        
+        user_data = query[0].to_dict()
+        user_id = query[0].id
+        
+      
+        if user_data.get('password') != password:  
+            return jsonify({
+                'success': False,
+                'error': 'Invalid credentials'
+            }), 401
+        
+        session['user'] = {
+            'uid': user_id,
+            'email': user_data['email'],
+            'name': user_data.get('name', user_data['email'].split('@')[0])
+        }
+        
+        return jsonify({
+            'success': True,
+            'user': session['user']
+        })
+        
+    except Exception as e:
+        logger.error(f"Login error: {e}")
+        return jsonify({
+            'success': False,
+            'error': 'Invalid credentials'
+        }), 401
+
+@app.route('/api/auth/signup', methods=['POST'])
+def api_signup():
+    """API endpoint for signup"""
+    try:
+        data = request.get_json()
+        email = data.get('email')
+        password = data.get('password')
+        name = data.get('name')
+        
+        # Check if user already exists
+        users_ref = firestore_db.collection("users")
+        query = users_ref.where("email", "==", email).limit(1).get()
+        
+        if query:
+            return jsonify({
+                'success': False,
+                'error': 'User already exists with this email'
+            }), 400
+        
+        # Store user data in Firestore
+        user_data = {
+            'email': email,
+            'password': password, 
+            'name': name,
+            'created_at': datetime.now(),
+            'role': 'medical_professional'
+        }
+        
+        doc_ref = firestore_db.collection("users").document()
+        doc_ref.set(user_data)
+        
+        # Login user
+        session['user'] = {
+            'uid': doc_ref.id,
+            'email': email,
+            'name': name
+        }
+        
+        return jsonify({
+            'success': True,
+            'user': session['user']
+        })
+        
+    except Exception as e:
+        logger.error(f"Signup error: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 400
+
+@app.route('/api/auth/logout', methods=['POST'])
+def api_logout():
+    """Logout user"""
+    session.pop('user', None)
+    return jsonify({'success': True})
+
+@app.route('/api/auth/user')
+def get_user():
+    """Get current user info"""
+    user = session.get('user')
+    if user:
+        return jsonify({'success': True, 'user': user})
+    return jsonify({'success': False, 'user': None})
+
+
+
+@app.route('/dashboard')
+@login_required
+def dashboard():
+    """Main application dashboard"""
     return render_template('index.html')
 
 @app.route('/api/health')
+@login_required
 def health_check():
     return jsonify({
         'status': 'healthy',
         'model_loaded': MODEL_LOADED,
-        'device': str(model.device) if MODEL_LOADED else 'none'
+        'device': str(model.device) if MODEL_LOADED else 'none',
+        'user': session.get('user')
     })
 
 @app.route('/api/predict', methods=['POST'])
+@login_required
 def predict():
+    """Protected prediction endpoint"""
     if not MODEL_LOADED:
         return jsonify({
             'success': False,
@@ -400,7 +375,7 @@ def predict():
             'error': 'No file selected'
         }), 400
     
-    # Check file type
+ 
     if not file.filename.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.tiff')):
         return jsonify({
             'success': False,
@@ -408,9 +383,28 @@ def predict():
         }), 400
     
     try:
+        user_id = session['user']['uid']
         image_bytes = file.read()
+        
+        # Run prediction
         result = model.predict(image_bytes)
+        if not result['success']:
+            return jsonify(result), 500
+        
+        # Store in Firebase
+        filename = f"{datetime.now().timestamp()}_{file.filename}"
+        image_url = upload_to_firebase_storage(image_bytes, filename, user_id)
+        
+        if image_url:
+            result['image_url'] = image_url
+            result['user_id'] = user_id
+            
+            # Save to Firestore
+            firestore_id = save_to_firestore(result, user_id)
+            result['firestore_id'] = firestore_id
+        
         return jsonify(result)
+        
     except Exception as e:
         logger.error(f"Prediction endpoint error: {e}")
         return jsonify({
@@ -419,6 +413,7 @@ def predict():
         }), 500
 
 @app.route('/api/generate-report', methods=['POST'])
+@login_required
 def generate_report():
     """Generate and download PDF report"""
     try:
@@ -447,12 +442,162 @@ def generate_report():
         logger.error(f"Report generation error: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@app.route('/api/user/history')
+@login_required
+def get_user_history():
+    """Get user's analysis history"""
+    try:
+        user_id = session['user']['uid']
+        docs = firestore_db.collection("users").document(user_id).collection("analysis_results").order_by("created_at", direction=firestore.Query.DESCENDING).limit(20).stream()
+        
+        history = []
+        for doc in docs:
+            data = doc.to_dict()
+            data['id'] = doc.id
+            # Convert timestamp for JSON serialization
+            if 'created_at' in data:
+                data['created_at'] = data['created_at'].isoformat()
+            history.append(data)
+        
+        return jsonify({'success': True, 'history': history})
+        
+    except Exception as e:
+        logger.error(f"History fetch error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+def generate_pdf_report(analysis_data, patient_info=None):
+    """Generate PDF medical report"""
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=0.5*inch)
+    
+    styles = getSampleStyleSheet()
+    story = []
+    
+    # Title
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=24,
+        spaceAfter=30,
+        textColor=colors.HexColor('#4facfe'),
+        alignment=1
+    )
+    
+    story.append(Paragraph("PulmoScan AI - Medical Report", title_style))
+    story.append(Spacer(1, 20))
+    
+    # Patient Information
+    if patient_info:
+        story.append(Paragraph("Patient Information", styles['Heading2']))
+        patient_data = [
+            ['Patient ID', patient_info.get('patient_id', 'N/A')],
+            ['Age', patient_info.get('age', 'N/A')],
+            ['Gender', patient_info.get('gender', 'N/A')],
+            ['Referring Physician', patient_info.get('physician', 'N/A')]
+        ]
+        patient_table = Table(patient_data, colWidths=[2*inch, 3*inch])
+        patient_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#4facfe')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 12),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black)
+        ]))
+        story.append(patient_table)
+        story.append(Spacer(1, 20))
+    
+    # Diagnosis Results
+    story.append(Paragraph("Diagnosis Results", styles['Heading2']))
+    
+    prediction = analysis_data.get('prediction', 'Unknown')
+    # Update prediction display for benign cases
+    if prediction == 'benign':
+        prediction_display = 'Benign Cancer'
+    elif prediction == 'malignant':
+        prediction_display = 'Malignant Cancer'
+    else:
+        prediction_display = prediction.title()
+    
+    confidence = analysis_data.get('confidence', 0) * 100
+
+    result_data = [
+        ['Prediction', prediction_display],
+        ['Confidence', f"{confidence:.1f}%"],
+        ['Risk Level', analysis_data.get('risk_level', 'Unknown').title()],
+        ['Analysis Date', datetime.now().strftime('%Y-%m-%d %H:%M:%S')]
+    ]
+    
+    result_table = Table(result_data, colWidths=[2*inch, 3*inch])
+    result_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#00f2fe')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 12),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.lightgrey),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+    ]))
+    story.append(result_table)
+    story.append(Spacer(1, 20))
+    
+    # Probability Distribution
+    story.append(Paragraph("Probability Distribution", styles['Heading2']))
+    probabilities = analysis_data.get('probabilities', {})
+    
+    prob_data = [['Class', 'Probability']]
+    for cls, prob in probabilities.items():
+        # Update class name display for benign
+        display_cls = 'Benign Cancer' if cls == 'benign' else 'Malignant Cancer' if cls == 'malignant' else cls.title()
+        prob_data.append([display_cls, f"{prob*100:.1f}%"])
+    
+    prob_table = Table(prob_data, colWidths=[2*inch, 3*inch])
+    prob_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#764ba2')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 12),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.whitesmoke),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+    ]))
+    story.append(prob_table)
+    story.append(Spacer(1, 20))
+    
+    # Medical Recommendations
+    story.append(Paragraph("Medical Recommendations", styles['Heading2']))
+    recommendations = analysis_data.get('recommendation', [])
+    
+    for i, rec in enumerate(recommendations, 1):
+        story.append(Paragraph(f"{i}. {rec}", styles['Normal']))
+    
+    story.append(Spacer(1, 20))
+    
+    # Disclaimer
+    disclaimer_style = ParagraphStyle(
+        'Disclaimer',
+        parent=styles['Normal'],
+        fontSize=8,
+        textColor=colors.grey,
+        alignment=1
+    )
+    story.append(Paragraph("This report is generated by AI and should be reviewed by a qualified medical professional. PulmoScan AI is not responsible for diagnostic decisions made based on this report.", disclaimer_style))
+    
+    doc.build(story)
+    buffer.seek(0)
+    return buffer
+
 @app.route('/api/sample-analysis')
 def sample_analysis():
     """Return sample data for frontend testing"""
     return jsonify({
         'success': True,
-        'prediction': 'normal',
+        'prediction': 'benign',
         'confidence': 0.894,
         'probabilities': {
             'normal': 0.894,
@@ -460,12 +605,12 @@ def sample_analysis():
             'malignant': 0.021
         },
         'recommendation': [
-            "No signs of cancer detected (Confidence: 89.4%)",
-            "Continue regular annual checkups",
-            "Maintain healthy lifestyle habits",
-            "No immediate follow-up required"
+            "BENIGN CANCER DETECTED (Confidence: 89.4%)",
+            "URGENT: Consult with an oncologist immediately",
+            "Schedule biopsy for confirmation",
+            "Begin treatment planning immediately"
         ],
-        'risk_level': 'low',
+        'risk_level': 'high',
         'timestamp': datetime.now().isoformat()
     })
 

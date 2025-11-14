@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - PulmoScan AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .medical-gradient {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .floating {
+            animation: floating 8s ease-in-out infinite;
+        }
+        
+        @keyframes floating {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            33% { transform: translateY(-30px) rotate(3deg); }
+            66% { transform: translateY(-15px) rotate(-3deg); }
+        }
+        
+        .pulse-glow {
+            animation: pulse-glow 4s ease-in-out infinite;
+        }
+        
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(79, 172, 254, 0.4); }
+            50% { box-shadow: 0 0 40px rgba(79, 172, 254, 0.8); }
+        }
+        
+        .slide-up {
+            animation: slideUp 0.8s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .input-focus {
+            transition: all 0.3s ease;
+        }
+        
+        .input-focus:focus {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(79, 172, 254, 0.3);
+        }
+        
+        .btn-hover {
+            transition: all 0.3s ease;
+        }
+        
+        .btn-hover:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 30px rgba(79, 172, 254, 0.4);
+        }
+
+        .progress-bar {
+            height: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: #10b981;
+            transition: width 0.3s ease;
+        }
+
+        /* Responsive text sizes */
+        @media (max-width: 480px) {
+            .responsive-text {
+                font-size: 0.875rem !important;
+            }
+            .responsive-heading {
+                font-size: 1.5rem !important;
+            }
+            .responsive-icon {
+                font-size: 1.5rem !important;
+            }
+            .responsive-small {
+                font-size: 0.75rem !important;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .responsive-text {
+                font-size: 0.8rem !important;
+            }
+            .responsive-heading {
+                font-size: 1.25rem !important;
+            }
+            .responsive-small {
+                font-size: 0.7rem !important;
+            }
+        }
+
+        /* Mobile optimizations */
+        @media (max-width: 640px) {
+            .mobile-padding {
+                padding: 1rem !important;
+            }
+            .mobile-space {
+                margin-bottom: 1.5rem !important;
+            }
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen flex items-center justify-center p-2 sm:p-4 overflow-hidden">
+    <!-- Animated Background Elements -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute -top-20 -right-20 w-40 h-40 sm:w-60 sm:h-60 md:w-80 md:h-80 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 floating"></div>
+        <div class="absolute -bottom-20 -left-20 w-40 h-40 sm:w-60 sm:h-60 md:w-80 md:h-80 bg-cyan-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 floating" style="animation-delay: 2s;"></div>
+    </div>
+
+    <!-- Signup Card -->
+    <div class="glass-effect rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 w-full max-w-sm sm:max-w-md mx-2 sm:mx-4 shadow-2xl transform transition-all duration-500 slide-up relative overflow-hidden">
+        <!-- Decorative Elements -->
+        <div class="absolute -top-6 -right-6 w-12 h-12 sm:w-16 sm:h-16 bg-white/10 rounded-full"></div>
+        <div class="absolute -bottom-4 -left-4 w-10 h-10 sm:w-12 sm:h-12 bg-white/10 rounded-full"></div>
+        
+        <div class="text-center mb-6 sm:mb-8 relative z-10">
+            <div class="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 medical-gradient rounded-2xl shadow-lg mb-4 sm:mb-6 pulse-glow">
+                <i class="fas fa-user-plus text-white text-xl sm:text-2xl responsive-icon"></i>
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-bold text-white mb-2 bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent responsive-heading">Join PulmoScan AI</h1>
+            <p class="text-white/80 text-sm responsive-text">Create your medical professional account</p>
+        </div>
+
+        <form id="signup-form" class="space-y-4 sm:space-y-6 relative z-10">
+            <div class="space-y-2">
+                <label class="block text-white text-sm font-medium responsive-text">Full Name</label>
+                <div class="relative">
+                    <input type="text" id="name" required
+                           class="w-full px-3 sm:px-4 py-3 bg-white/20 backdrop-blur-sm border border-white/30 rounded-xl text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent transition-all duration-300 pl-10 sm:pl-12 input-focus responsive-text"
+                           placeholder="Enter your full name">
+                    <i class="fas fa-user absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-white/60 text-sm sm:text-base"></i>
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <label class="block text-white text-sm font-medium responsive-text">Email Address</label>
+                <div class="relative">
+                    <input type="email" id="email" required
+                           class="w-full px-3 sm:px-4 py-3 bg-white/20 backdrop-blur-sm border border-white/30 rounded-xl text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent transition-all duration-300 pl-10 sm:pl-12 input-focus responsive-text"
+                           placeholder="Enter your email">
+                    <i class="fas fa-envelope absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-white/60 text-sm sm:text-base"></i>
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <label class="block text-white text-sm font-medium responsive-text">Password</label>
+                <div class="relative">
+                    <input type="password" id="password" required minlength="6"
+                           class="w-full px-3 sm:px-4 py-3 bg-white/20 backdrop-blur-sm border border-white/30 rounded-xl text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent transition-all duration-300 pl-10 sm:pl-12 input-focus responsive-text"
+                           placeholder="Create a password">
+                    <i class="fas fa-lock absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-white/60 text-sm sm:text-base"></i>
+                </div>
+                
+                <!-- Password Strength Indicator -->
+                <div class="password-strength mt-2">
+                    <div class="progress-bar">
+                        <div id="password-strength-bar" class="progress-fill" style="width: 0%"></div>
+                    </div>
+                    <div class="text-white/60 text-xs mt-1 responsive-small">
+                        Minimum 6 characters
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <label class="block text-white text-sm font-medium responsive-text">Confirm Password</label>
+                <div class="relative">
+                    <input type="password" id="confirm-password" required
+                           class="w-full px-3 sm:px-4 py-3 bg-white/20 backdrop-blur-sm border border-white/30 rounded-xl text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent transition-all duration-300 pl-10 sm:pl-12 input-focus responsive-text"
+                           placeholder="Confirm your password">
+                    <i class="fas fa-lock absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-white/60 text-sm sm:text-base"></i>
+                </div>
+                <div id="password-match" class="text-xs mt-1 responsive-small hidden">
+                    <i class="fas fa-check-circle mr-1"></i>
+                    <span>Passwords match</span>
+                </div>
+            </div>
+
+            <div class="flex items-start space-x-2 sm:space-x-3">
+                <input type="checkbox" id="terms" required
+                       class="w-3 h-3 sm:w-4 sm:h-4 mt-1 text-blue-600 bg-white/20 border-white/30 rounded focus:ring-white/50 focus:ring-2 flex-shrink-0">
+                <label for="terms" class="text-white/80 text-xs sm:text-sm responsive-text">
+                    I agree to the <a href="#" class="text-white font-semibold hover:text-white/80 transition-colors">Terms of Service</a> and <a href="#" class="text-white font-semibold hover:text-white/80 transition-colors">Privacy Policy</a>
+                </label>
+            </div>
+
+            <div class="flex items-start space-x-2 sm:space-x-3">
+                <input type="checkbox" id="newsletter"
+                       class="w-3 h-3 sm:w-4 sm:h-4 mt-1 text-blue-600 bg-white/20 border-white/30 rounded focus:ring-white/50 focus:ring-2 flex-shrink-0">
+                <label for="newsletter" class="text-white/80 text-xs sm:text-sm responsive-text">
+                    Send me product updates and medical research insights
+                </label>
+            </div>
+
+            <button type="submit" 
+                    class="w-full medical-gradient text-white py-3 sm:py-4 px-4 sm:px-6 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center space-x-2 btn-hover pulse-glow responsive-text">
+                <i class="fas fa-user-plus text-sm sm:text-base"></i>
+                <span>Create Professional Account</span>
+            </button>
+        </form>
+
+        <div class="text-center mt-4 sm:mt-6 relative z-10">
+            <div class="relative flex items-center justify-center mb-3 sm:mb-4">
+                <div class="flex-grow border-t border-white/20"></div>
+                <span class="mx-2 sm:mx-4 text-white/60 text-xs sm:text-sm responsive-text">Already have an account?</span>
+                <div class="flex-grow border-t border-white/20"></div>
+            </div>
+            <a href="/login" class="inline-flex items-center justify-center w-full bg-white/10 hover:bg-white/20 text-white py-3 px-4 sm:px-6 rounded-xl font-medium transition-all duration-300 border border-white/20 hover:border-white/40 btn-hover responsive-text">
+                <i class="fas fa-sign-in-alt mr-2 text-sm sm:text-base"></i>
+                Sign In Instead
+            </a>
+        </div>
+        
+        <!-- Security Badge -->
+        <div class="mt-4 flex items-center justify-center space-x-2 text-white/40 text-xs responsive-text">
+            <i class="fas fa-shield-alt"></i>
+            <span>HIPAA Compliant • Encrypted • Secure</span>
+        </div>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notification-container" class="fixed top-2 right-2 sm:top-4 sm:right-4 z-50 space-y-2 max-w-xs sm:max-w-sm"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const signupForm = document.getElementById('signup-form');
+            const notificationContainer = document.getElementById('notification-container');
+            const passwordInput = document.getElementById('password');
+            const confirmPasswordInput = document.getElementById('confirm-password');
+            const passwordMatch = document.getElementById('password-match');
+            const passwordStrengthBar = document.getElementById('password-strength-bar');
+
+            // Check if user is already logged in
+            checkAuthStatus();
+
+            // Password strength checker
+            passwordInput.addEventListener('input', function() {
+                checkPasswordStrength(this.value);
+                checkPasswordMatch();
+            });
+
+            confirmPasswordInput.addEventListener('input', checkPasswordMatch);
+
+            signupForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const name = document.getElementById('name').value;
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                const confirmPassword = document.getElementById('confirm-password').value;
+                const terms = document.getElementById('terms').checked;
+                
+                // Validate passwords match
+                if (password !== confirmPassword) {
+                    showNotification('Passwords do not match. Please check and try again.', 'error');
+                    return;
+                }
+                
+                // Validate password length
+                if (password.length < 6) {
+                    showNotification('Password must be at least 6 characters long.', 'error');
+                    return;
+                }
+                
+                // Validate terms agreement
+                if (!terms) {
+                    showNotification('Please agree to the Terms of Service and Privacy Policy.', 'error');
+                    return;
+                }
+                
+                // Add loading state to button
+                const submitBtn = signupForm.querySelector('button[type="submit"]');
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Creating Account...';
+                submitBtn.disabled = true;
+                
+                try {
+                    const response = await fetch('/api/auth/signup', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ name, email, password })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        showNotification('Account created successfully! Redirecting...', 'success');
+                        setTimeout(() => {
+                            window.location.href = '/';
+                        }, 1500);
+                    } else {
+                        showNotification(data.error || 'Signup failed. Please try again.', 'error');
+                        submitBtn.innerHTML = originalText;
+                        submitBtn.disabled = false;
+                    }
+                } catch (error) {
+                    console.error('Signup error:', error);
+                    showNotification('Network error. Please check your connection.', 'error');
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                }
+            });
+
+            function checkPasswordStrength(password) {
+                let strength = 0;
+                
+                // Length check
+                if (password.length >= 6) strength += 25;
+                if (password.length >= 8) strength += 25;
+                
+                // Complexity checks
+                if (/[A-Z]/.test(password)) strength += 15;
+                if (/[0-9]/.test(password)) strength += 15;
+                if (/[^A-Za-z0-9]/.test(password)) strength += 20;
+                
+                // Update progress bar
+                passwordStrengthBar.style.width = `${strength}%`;
+                
+                // Update color based on strength
+                if (strength < 50) {
+                    passwordStrengthBar.style.background = '#ef4444';
+                } else if (strength < 75) {
+                    passwordStrengthBar.style.background = '#f59e0b';
+                } else {
+                    passwordStrengthBar.style.background = '#10b981';
+                }
+            }
+
+            function checkPasswordMatch() {
+                const password = passwordInput.value;
+                const confirmPassword = confirmPasswordInput.value;
+                
+                if (confirmPassword.length > 0) {
+                    if (password === confirmPassword && password.length >= 6) {
+                        passwordMatch.classList.remove('hidden');
+                        passwordMatch.innerHTML = '<i class="fas fa-check-circle mr-1 text-green-400"></i><span class="text-green-400">Passwords match</span>';
+                    } else {
+                        passwordMatch.classList.remove('hidden');
+                        passwordMatch.innerHTML = '<i class="fas fa-times-circle mr-1 text-red-400"></i><span class="text-red-400">Passwords do not match</span>';
+                    }
+                } else {
+                    passwordMatch.classList.add('hidden');
+                }
+            }
+
+            async function checkAuthStatus() {
+                try {
+                    const response = await fetch('/api/auth/user');
+                    const data = await response.json();
+                    
+                    if (data.success && data.user) {
+                        window.location.href = '/';
+                    }
+                } catch (error) {
+                    console.error('Auth check error:', error);
+                }
+            }
+
+            function showNotification(message, type = 'info') {
+                const notification = document.createElement('div');
+                const bgColor = type === 'error' ? 'bg-red-500' : type === 'success' ? 'bg-green-500' : 'bg-blue-500';
+                const icon = type === 'error' ? 'exclamation-triangle' : type === 'success' ? 'check-circle' : 'info-circle';
+                
+                notification.className = `${bgColor} text-white px-4 py-3 rounded-xl shadow-2xl transform transition-all duration-300 translate-x-full text-sm responsive-text`;
+                notification.innerHTML = `
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-${icon}"></i>
+                        <span class="font-medium">${message}</span>
+                    </div>
+                `;
+                
+                notificationContainer.appendChild(notification);
+                
+                setTimeout(() => {
+                    notification.classList.remove('translate-x-full');
+                }, 100);
+                
+                setTimeout(() => {
+                    notification.classList.add('translate-x-full');
+                    setTimeout(() => {
+                        if (notificationContainer.contains(notification)) {
+                            notificationContainer.removeChild(notification);
+                        }
+                    }, 300);
+                }, 5000);
+            }
+        });
+    </script>
+</body>
+</html>
