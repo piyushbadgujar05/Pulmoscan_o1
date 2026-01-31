@@ -1,0 +1,13 @@
+# Python
+__pycache__/
+*.pyc
+
+# Secrets
+*.json
+.env
+
+# ML models
+*.pth
+
+# OS
+.DS_Store
