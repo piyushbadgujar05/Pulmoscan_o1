@@ -6,6 +6,6 @@ Pillow==10.0.0
 numpy==1.24.3
 gunicorn==21.2.0
 reportlab==4.0.4
-clerk-sdk==0.1.0
-requests
-
+firebase-admin==6.2.0
+requests==2.31.0
+python-dotenv==1.0.0

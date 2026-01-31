@@ -1,5 +1,6 @@
 import os
 import io
+import json
 import base64
 from datetime import datetime
 from flask import Flask, request, jsonify, render_template, send_file, redirect, url_for, session
@@ -19,23 +20,57 @@ from reportlab.graphics.charts.piecharts import Pie
 from reportlab.graphics.charts.barcharts import VerticalBarChart
 from reportlab.graphics import renderPDF
 
+# Load environment variables from .env file (for local development)
+from dotenv import load_dotenv
+load_dotenv()
+
 # Firebase Admin SDK
 import firebase_admin
 from firebase_admin import credentials, firestore, storage, auth as firebase_auth
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
+# Flask app initialization
 app = Flask(__name__)
-app.secret_key = 'pulmoscan-secret-key-2024'  
-CORS(app)
 
+# Security: Use environment variable for secret key
+app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 
-FIREBASE_CRED_PATH = "pulmoscan-a2b88-firebase-adminsdk-fbsvc-ed30f0c618.json"
+# CORS configuration
+CORS(app, resources={
+    r"/api/*": {
+        "origins": "*",  # In production, restrict to your domain
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type"]
+    }
+})
+
+# Firebase initialization with environment variable
+FIREBASE_INITIALIZED = False
 
 try:
-    cred = credentials.Certificate(FIREBASE_CRED_PATH)
+    # Try to load Firebase credentials from environment variable first
+    firebase_json_str = os.environ.get("FIREBASE_ADMIN_JSON")
+    
+    if firebase_json_str:
+        # Production: Load from environment variable
+        firebase_json = json.loads(firebase_json_str)
+        cred = credentials.Certificate(firebase_json)
+        logger.info("✅ Using Firebase credentials from environment variable")
+    else:
+        # Development: Load from file
+        firebase_cred_path = "pulmoscan-a2b88-firebase-adminsdk-fbsvc-ed30f0c618.json"
+        if os.path.exists(firebase_cred_path):
+            cred = credentials.Certificate(firebase_cred_path)
+            logger.info("✅ Using Firebase credentials from local file")
+        else:
+            raise FileNotFoundError("Firebase credentials not found")
+    
     firebase_admin.initialize_app(cred, {
         "storageBucket": "pulmoscan-a2b88.appspot.com"
     })
@@ -43,6 +78,7 @@ try:
     storage_bucket = storage.bucket()
     FIREBASE_INITIALIZED = True
     logger.info("✅ Firebase initialized successfully")
+    
 except Exception as e:
     logger.error(f"❌ Firebase initialization failed: {e}")
     FIREBASE_INITIALIZED = False
@@ -160,11 +196,88 @@ class LungCancerModel:
         }
         return risk_levels.get(prediction, 'unknown')
 
+# --------------------------------------------------------------------------------
+# Model Download Helper Functions
+# --------------------------------------------------------------------------------
+def download_from_google_drive(url, destination):
+    """Download file from Google Drive with virus scan bypass"""
+    import requests
+    
+    try:
+        session = requests.Session()
+        
+        # First request to get confirmation token
+        response = session.get(url, stream=True, allow_redirects=True)
+        
+        # Look for virus scan warning and confirmation token
+        token = None
+        for key, value in response.cookies.items():
+            if key.startswith('download_warning'):
+                token = value
+                break
+        
+        # If token found, make confirmed download request
+        if token:
+            params = {'confirm': token}
+            response = session.get(url, params=params, stream=True, allow_redirects=True)
+        
+        # Save file
+        logger.info(f"Downloading model to {destination}...")
+        with open(destination, 'wb') as f:
+            for chunk in response.iter_content(chunk_size=32768):
+                if chunk:
+                    f.write(chunk)
+        
+        logger.info(f"✅ Model downloaded successfully ({os.path.getsize(destination) / 1024 / 1024:.1f} MB)")
+        return True
+        
+    except Exception as e:
+        logger.error(f"Download failed: {e}")
+        return False
+
+def ensure_model_exists(model_path, model_url):
+    """Ensure model file exists, download if necessary"""
+    
+    # Check if model already exists
+    if os.path.exists(model_path):
+        file_size = os.path.getsize(model_path) / 1024 / 1024
+        logger.info(f"✅ Model file found: {model_path} ({file_size:.1f} MB)")
+        return True
+    
+    # If no URL provided, can't download
+    if not model_url:
+        logger.error(f"❌ Model file not found at {model_path} and MODEL_URL not provided")
+        return False
+    
+    # Download the model
+    logger.info(f"📥 Downloading model from {model_url[:50]}...")
+    
+    # Create directory if needed
+    model_dir = os.path.dirname(model_path)
+    if model_dir and not os.path.exists(model_dir):
+        os.makedirs(model_dir, exist_ok=True)
+    
+    return download_from_google_drive(model_url, model_path)
+
 # Initialize model
+MODEL_LOADED = False
+
 try:
-    model = LungCancerModel('lung_cancer_model.pth')
-    MODEL_LOADED = True
-    logger.info("✅ Lung Cancer Detection System Ready!")
+    # Get model path and URL from environment
+    MODEL_PATH = os.environ.get('MODEL_PATH', 'lung_cancer_model.pth')
+    MODEL_URL = os.environ.get('MODEL_URL')
+    
+    logger.info(f"Model Path: {MODEL_PATH}")
+    logger.info(f"Model URL: {'Set' if MODEL_URL else 'Not set'}")
+    
+    # Ensure model file exists (download if needed)
+    if ensure_model_exists(MODEL_PATH, MODEL_URL):
+        model = LungCancerModel(MODEL_PATH)
+        MODEL_LOADED = True
+        logger.info("✅ Lung Cancer Detection System Ready!")
+    else:
+        logger.error("❌ Failed to obtain model file")
+        
 except Exception as e:
     MODEL_LOADED = False
     logger.error(f"❌ Failed to load model: {e}")
@@ -619,5 +732,14 @@ def sample_analysis():
         'timestamp': datetime.now().isoformat()
     })
 
+
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    # Get configuration from environment
+    port = int(os.environ.get('PORT', 5000))
+    debug = os.environ.get('FLASK_ENV') != 'production'
+    
+    app.run(
+        debug=debug,
+        host='0.0.0.0',
+        port=port
+    )
