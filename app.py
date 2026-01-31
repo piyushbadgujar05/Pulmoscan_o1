@@ -36,7 +36,15 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Flask app initialization
-app = Flask(__name__)
+from flask import Flask, send_from_directory
+
+app = Flask(
+    __name__,
+    template_folder="frontend",  # HTML templates are in frontend/
+    static_folder="frontend",     # Static files also in frontend/
+    static_url_path=""
+)
+
 
 # Security: Use environment variable for secret key
 app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
