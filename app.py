@@ -32,12 +32,12 @@ app.secret_key = 'pulmoscan-secret-key-2024'
 CORS(app)
 
 
-FIREBASE_CRED_PATH = "pulmoscan-a2b88-firebase-adminsdk-fbsvc-72f55a0a6a.json"
+FIREBASE_CRED_PATH = "pulmoscan-a2b88-firebase-adminsdk-fbsvc-ed30f0c618.json"
 
 try:
     cred = credentials.Certificate(FIREBASE_CRED_PATH)
     firebase_admin.initialize_app(cred, {
-        "storageBucket": "pulmoscan-a2b88.firebasestorage.app"
+        "storageBucket": "pulmoscan-a2b88.appspot.com"
     })
     firestore_db = firestore.client()
     storage_bucket = storage.bucket()
@@ -237,6 +237,7 @@ def api_login():
         query = users_ref.where("email", "==", email).limit(1).get()
         
         if not query:
+            logger.warning(f"Login failed: User {email} not found")
             return jsonify({
                 'success': False,
                 'error': 'Invalid credentials'
@@ -245,8 +246,12 @@ def api_login():
         user_data = query[0].to_dict()
         user_id = query[0].id
         
-      
+        logger.info(f"User found: {email}, ID: {user_id}")
+        # DEBUG: Print password lengths (don't print actual passwords in prod logs usually, but for local debug it's okay-ish, or just length)
+        logger.info(f"Stored pwd: {user_data.get('password')}, Provided pwd: {password}")
+
         if user_data.get('password') != password:  
+            logger.warning("Login failed: Password mismatch")
             return jsonify({
                 'success': False,
                 'error': 'Invalid credentials'
